@@ -80,8 +80,28 @@ class _DogBreedDetailScreenState extends State<DogBreedDetailScreen> {
         child: ListView(
           children: [
             if (breed.imageUrl.isNotEmpty)
-              Image.network(breed.imageUrl, height: 250, fit: BoxFit.cover),
-            const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  breed.imageUrl,
+                  height: 250,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 250,
+                      color: Colors.grey[300],
+                      child:
+                          const Icon(Icons.pets, size: 100, color: Colors.grey),
+                    );
+                  },
+                ),
+              )
+            else
+              Container(
+                height: 250,
+                color: Colors.grey[300],
+                child: const Icon(Icons.pets, size: 100, color: Colors.grey),
+              ),
             Text('Temperament: ${breed.temperament}',
                 style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),

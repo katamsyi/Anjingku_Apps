@@ -14,6 +14,7 @@ class NotesListScreen extends StatefulWidget {
 
 class _NotesListScreenState extends State<NotesListScreen> {
   late Future<List<_NoteBreed>> _notesFuture;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -22,28 +23,33 @@ class _NotesListScreenState extends State<NotesListScreen> {
   }
 
   Future<List<_NoteBreed>> _loadNotes() async {
-    final apiBreeds = await DogApiService.fetchDogBreeds();
-    final localNotes = DogLocalService.getBox()
-        .values
-        .where((e) => e.userNote != null && e.userNote!.isNotEmpty)
-        .toList();
+    try {
+      final apiBreeds = await DogApiService.fetchAllBreeds();
+      final localNotes = DogLocalService.getBox()
+          .values
+          .where((e) => e.userNote != null && e.userNote!.isNotEmpty)
+          .toList();
 
-    List<_NoteBreed> notesWithDetail = [];
+      List<_NoteBreed> notesWithDetail = [];
 
-    for (var local in localNotes) {
-      final matchApi = apiBreeds.firstWhere(
-        (apiBreed) => apiBreed.id.toString() == local.id,
-        orElse: () => DogBreed(
-          id: 0,
-          name: 'Data tidak ditemukan',
-          temperament: '',
-          lifeSpan: '',
-          imageUrl: '',
-        ),
-      );
-      notesWithDetail.add(_NoteBreed(apiBreed: matchApi, localData: local));
+      for (var local in localNotes) {
+        final matchApi = apiBreeds.firstWhere(
+          (apiBreed) => apiBreed.id.toString() == local.id,
+          orElse: () => DogBreed(
+            id: 0,
+            name: 'Data tidak ditemukan',
+            temperament: '',
+            lifeSpan: '',
+            imageUrl: '',
+          ),
+        );
+        notesWithDetail.add(_NoteBreed(apiBreed: matchApi, localData: local));
+      }
+      return notesWithDetail;
+    } catch (e) {
+      // Error fetch API, kembalikan list kosong
+      return [];
     }
-    return notesWithDetail;
   }
 
   void _reloadNotes() {
@@ -72,89 +78,109 @@ class _NotesListScreenState extends State<NotesListScreen> {
     );
   }
 
+  Future<void> _deleteNote(String id, String breedName) async {
+    setState(() {
+      _isDeleting = true;
+    });
+    await DogLocalService.delete(id);
+    _reloadNotes();
+    setState(() {
+      _isDeleting = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Catatan untuk $breedName dihapus')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Daftar Catatan')),
-      body: FutureBuilder<List<_NoteBreed>>(
-        future: _notesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Belum ada catatan'));
-          }
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(title: const Text('Daftar Catatan')),
+          body: FutureBuilder<List<_NoteBreed>>(
+            future: _notesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('Belum ada catatan'));
+              }
 
-          final notes = snapshot.data!;
+              final notes = snapshot.data!;
 
-          return ListView.builder(
-            itemCount: notes.length,
-            itemBuilder: (context, index) {
-              final note = notes[index];
+              return ListView.builder(
+                itemCount: notes.length,
+                itemBuilder: (context, index) {
+                  final note = notes[index];
 
-              return Dismissible(
-                key: Key(note.localData.id),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (_) async {
-                  final confirm =
-                      await _showConfirmDialog(context, note.apiBreed.name);
-                  return confirm;
-                },
-                onDismissed: (_) async {
-                  await DogLocalService.delete(note.localData.id);
-                  _reloadNotes();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(
-                            'Catatan untuk ${note.apiBreed.name} dihapus')),
+                  return Dismissible(
+                    key: Key(note.localData.id),
+                    direction: DismissDirection.endToStart,
+                    confirmDismiss: (_) async {
+                      final confirm =
+                          await _showConfirmDialog(context, note.apiBreed.name);
+                      return confirm;
+                    },
+                    onDismissed: (_) async {
+                      await _deleteNote(note.localData.id, note.apiBreed.name);
+                    },
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    child: ListTile(
+                      leading: note.apiBreed.imageUrl.isNotEmpty
+                          ? Image.network(
+                              note.apiBreed.imageUrl,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                            )
+                          : const SizedBox(width: 60, height: 60),
+                      title: Text(note.apiBreed.name),
+                      subtitle: Text(
+                        note.localData.userNote ?? '',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit),
+                        tooltip: 'Edit Catatan',
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => NoteEditScreen(
+                                breedId: note.localData.id,
+                              ),
+                            ),
+                          );
+                          _reloadNotes();
+                        },
+                      ),
+                    ),
                   );
                 },
-                background: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const Icon(Icons.delete, color: Colors.white),
-                ),
-                child: ListTile(
-                  leading: note.apiBreed.imageUrl.isNotEmpty
-                      ? Image.network(
-                          note.apiBreed.imageUrl,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                        )
-                      : const SizedBox(width: 60, height: 60),
-                  title: Text(note.apiBreed.name),
-                  subtitle: Text(
-                    note.localData.userNote ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.edit),
-                    tooltip: 'Edit Catatan',
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => NoteEditScreen(
-                            breedId: note.localData.id,
-                          ),
-                        ),
-                      );
-                      _reloadNotes();
-                    },
-                  ),
-                ),
               );
             },
-          );
-        },
-      ),
+          ),
+        ),
+        if (_isDeleting)
+          Container(
+            color: Colors.black.withOpacity(0.3),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+      ],
     );
   }
 }

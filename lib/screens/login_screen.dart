@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/auth_preferences.dart';
+import '../services/auth_user_service.dart';
 import 'home_screen.dart';
+import 'package:logger/logger.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,8 +13,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  final Logger logger = Logger();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -43,14 +46,20 @@ class _LoginScreenState extends State<LoginScreen>
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
 
-      final isValid = await AuthPreferences.validateUser(username, password);
+      logger.i('Attempt login for username: $username');
+
+      final isValid = await AuthService.validateUser(username, password);
+
+      logger.i('Login validation result: $isValid');
 
       setState(() {
         _isLoading = false;
       });
 
       if (isValid) {
-        await AuthPreferences.saveLogin(username);
+        await AuthService.saveLoginStatus(username);
+        logger.i('Login status saved for user: $username');
+
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
@@ -60,6 +69,7 @@ class _LoginScreenState extends State<LoginScreen>
         setState(() {
           _errorMessage = 'Username atau password salah';
         });
+        logger.w('Login failed for username: $username');
       }
     }
   }
@@ -109,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen>
                           prefixIcon: Icon(Icons.person),
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) => value == null || value.isEmpty
+                        validator: (value) => (value == null || value.isEmpty)
                             ? 'Isi username'
                             : null,
                       ),
@@ -122,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen>
                           prefixIcon: Icon(Icons.lock),
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) => value == null || value.isEmpty
+                        validator: (value) => (value == null || value.isEmpty)
                             ? 'Isi password'
                             : null,
                       ),

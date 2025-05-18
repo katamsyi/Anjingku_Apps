@@ -13,16 +13,22 @@ class FavoriteScreen extends StatefulWidget {
 }
 
 class _FavoriteScreenState extends State<FavoriteScreen> {
-  late Future<List<_FavoriteBreed>> _favoriteBreedsFuture;
+  final TextEditingController _searchController = TextEditingController();
+  List<_FavoriteBreed> _allFavorites = [];
+  List<_FavoriteBreed> _filteredFavorites = [];
 
   @override
   void initState() {
     super.initState();
-    _favoriteBreedsFuture = _loadFavoriteBreeds();
+    _loadFavoriteBreeds();
+
+    _searchController.addListener(() {
+      _filterFavorites(_searchController.text.trim());
+    });
   }
 
-  Future<List<_FavoriteBreed>> _loadFavoriteBreeds() async {
-    final apiBreeds = await DogApiService.fetchDogBreeds();
+  Future<void> _loadFavoriteBreeds() async {
+    final apiBreeds = await DogApiService.fetchAllBreeds();
     final localFavorites = DogLocalService.getFavorites();
 
     List<_FavoriteBreed> favoritesWithDetail = [];
@@ -41,13 +47,26 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
       favoritesWithDetail
           .add(_FavoriteBreed(apiBreed: matchApi, localData: local));
     }
-    return favoritesWithDetail;
+
+    setState(() {
+      _allFavorites = favoritesWithDetail;
+      _filteredFavorites = List.from(_allFavorites);
+    });
   }
 
-  void _reloadFavorites() {
-    setState(() {
-      _favoriteBreedsFuture = _loadFavoriteBreeds();
-    });
+  void _filterFavorites(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredFavorites = List.from(_allFavorites);
+      });
+    } else {
+      setState(() {
+        _filteredFavorites = _allFavorites
+            .where((fav) =>
+                fav.apiBreed.name.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      });
+    }
   }
 
   Future<bool?> _showConfirmDialog(BuildContext context, String breedName) {
@@ -70,117 +89,144 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
     );
   }
 
+  void _reloadFavorites() {
+    _loadFavoriteBreeds();
+    _searchController.clear();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Daftar Favorit')),
-      body: FutureBuilder<List<_FavoriteBreed>>(
-        future: _favoriteBreedsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Belum ada favorit'));
-          }
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: 'Cari favorit...',
+                border: const OutlineInputBorder(),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          FocusScope.of(context).unfocus();
+                          _filterFavorites('');
+                        },
+                      )
+                    : null,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _filteredFavorites.isEmpty
+                ? const Center(child: Text('Belum ada favorit'))
+                : ListView.builder(
+                    itemCount: _filteredFavorites.length,
+                    itemBuilder: (context, index) {
+                      final fav = _filteredFavorites[index];
 
-          final favorites = snapshot.data!;
-
-          return ListView.builder(
-            itemCount: favorites.length,
-            itemBuilder: (context, index) {
-              final fav = favorites[index];
-
-              return Dismissible(
-                key: Key(fav.localData.id),
-                direction: DismissDirection.horizontal,
-                confirmDismiss: (_) async {
-                  final confirm =
-                      await _showConfirmDialog(context, fav.apiBreed.name);
-                  return confirm;
-                },
-                onDismissed: (_) async {
-                  fav.localData.isFavorite = false;
-                  await DogLocalService.save(fav.localData);
-                  _reloadFavorites();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content:
-                            Text('${fav.apiBreed.name} dihapus dari favorit')),
-                  );
-                },
-                background: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const Icon(Icons.delete, color: Colors.white),
-                ),
-                secondaryBackground: Container(
-                  color: Colors.red,
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: const Icon(Icons.delete, color: Colors.white),
-                ),
-                child: Card(
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    leading: fav.apiBreed.imageUrl.isNotEmpty
-                        ? Image.network(
-                            fav.apiBreed.imageUrl,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                          )
-                        : const SizedBox(width: 60, height: 60),
-                    title: Text(fav.apiBreed.name),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Temperament: ${fav.apiBreed.temperament}'),
-                        if (fav.localData.userNote != null &&
-                            fav.localData.userNote!.isNotEmpty)
-                          Text('Catatan: ${fav.localData.userNote}',
-                              style:
-                                  const TextStyle(fontStyle: FontStyle.italic)),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          tooltip: 'Edit Catatan',
-                          onPressed: () async {
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DogBreedDetailScreen(
-                                  apiBreed: fav.apiBreed,
-                                  localData: fav.localData,
+                      return Dismissible(
+                        key: Key(fav.localData.id),
+                        direction: DismissDirection.horizontal,
+                        confirmDismiss: (_) async {
+                          final confirm = await _showConfirmDialog(
+                              context, fav.apiBreed.name);
+                          return confirm;
+                        },
+                        onDismissed: (_) async {
+                          fav.localData.isFavorite = false;
+                          await DogLocalService.save(fav.localData);
+                          _reloadFavorites();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    '${fav.apiBreed.name} dihapus dari favorit')),
+                          );
+                        },
+                        background: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        secondaryBackground: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        child: Card(
+                          margin: const EdgeInsets.all(8),
+                          child: ListTile(
+                            leading: fav.apiBreed.imageUrl.isNotEmpty
+                                ? Image.network(
+                                    fav.apiBreed.imageUrl,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.cover,
+                                  )
+                                : const SizedBox(width: 60, height: 60),
+                            title: Text(fav.apiBreed.name),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                    'Temperament: ${fav.apiBreed.temperament}'),
+                                if (fav.localData.userNote != null &&
+                                    fav.localData.userNote!.isNotEmpty)
+                                  Text('Catatan: ${fav.localData.userNote}',
+                                      style: const TextStyle(
+                                          fontStyle: FontStyle.italic)),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  tooltip: 'Edit Catatan',
+                                  onPressed: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => DogBreedDetailScreen(
+                                          apiBreed: fav.apiBreed,
+                                          localData: fav.localData,
+                                        ),
+                                      ),
+                                    );
+                                    _reloadFavorites();
+                                  },
                                 ),
-                              ),
-                            );
-                            _reloadFavorites();
-                          },
+                                IconButton(
+                                  icon: const Icon(Icons.favorite,
+                                      color: Colors.red),
+                                  tooltip: 'Hapus Favorit',
+                                  onPressed: () async {
+                                    fav.localData.isFavorite = false;
+                                    await DogLocalService.save(fav.localData);
+                                    _reloadFavorites();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.favorite, color: Colors.red),
-                          tooltip: 'Hapus Favorit',
-                          onPressed: () async {
-                            fav.localData.isFavorite = false;
-                            await DogLocalService.save(fav.localData);
-                            _reloadFavorites();
-                          },
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                ),
-              );
-            },
-          );
-        },
+          ),
+        ],
       ),
     );
   }

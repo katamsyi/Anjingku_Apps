@@ -5,16 +5,35 @@ import 'package:cobaprojek/screens/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/dog_breed_local.dart';
+import 'models/user_model.dart';
 import 'screens/login_screen.dart';
-//import 'screens/notes_list_screen.dart';
+import 'package:device_preview/device_preview.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  Hive.registerAdapter(DogBreedLocalAdapter());
-  await Hive.openBox<DogBreedLocal>('dogBreedsLocal');
 
-  runApp(const MyApp());
+  await Hive.initFlutter();
+
+  // Daftarkan adapter Hive model
+  Hive.registerAdapter(DogBreedLocalAdapter());
+  Hive.registerAdapter(UserAdapter());
+
+  // Buka box Hive sebelum runApp
+  await Hive.openBox<DogBreedLocal>('dogBreedsLocal');
+  await Hive.openBox<User>('users');
+
+  // Debug: cek data user di Hive
+  var userBox = Hive.box<User>('users');
+  for (var user in userBox.values) {
+    print('User in Hive at startup: ${user.username}');
+  }
+
+  runApp(
+    DevicePreview(
+      enabled: true,
+      builder: (context) => const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -23,7 +42,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Dog API + Hive CRUD Demo',
+      title: 'Dog Apps',
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/login',
       routes: {

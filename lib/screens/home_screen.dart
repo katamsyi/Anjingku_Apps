@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/auth_preferences.dart';
+import '../services/auth_user_service.dart';
 import 'dog_breed_list_screen.dart';
 import 'favorite_screen.dart';
 import 'note_edit_screen.dart';
@@ -22,14 +22,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUsername() async {
-    final username = await AuthPreferences.getUsername();
+    final username = await AuthService.getUsername();
     setState(() {
       _username = username;
     });
   }
 
   void _logout() async {
-    await AuthPreferences.logout();
+    await AuthService.logout();
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
@@ -110,12 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     color: Colors.blueAccent,
                   )
-                  /*_HomeMenuCard(
-                    icon: Icons.edit_note,
-                    label: 'Tambah Catatan',
-                    onTap: _goToNotes,
-                    color: Colors.green,
-                  ),*/
                 ],
               ),
             ),

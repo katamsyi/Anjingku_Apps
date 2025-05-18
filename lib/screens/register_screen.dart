@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_preferences.dart';
+import '../services/auth_user_service.dart';
+import 'package:logger/logger.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,8 +12,10 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  final Logger logger = Logger();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -42,32 +45,22 @@ class _RegisterScreenState extends State<RegisterScreen>
       final username = _usernameController.text.trim();
       final password = _passwordController.text;
 
-      final users = await AuthPreferences.getRegisteredUsers();
+      try {
+        logger.i('Attempting to register user: $username');
+        await AuthService.registerUser(username, password);
+        logger.i('User registered successfully: $username');
 
-      if (users.containsKey(username)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Register berhasil. Silakan login.')));
+        Navigator.pushReplacementNamed(context, '/login');
+      } catch (e) {
+        logger.e('Register failed for $username: $e');
         setState(() {
-          _errorMessage = 'Username sudah terdaftar.';
+          _errorMessage = e.toString();
           _isLoading = false;
         });
-        return;
       }
-
-      await AuthPreferences.registerUser(username, password);
-
-      setState(() {
-        _isLoading = false;
-        _errorMessage = null;
-      });
-
-      _usernameController.clear();
-      _passwordController.clear();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Register berhasil. Silakan login.')),
-      );
-
-      Navigator.pop(context);
     }
   }
 
@@ -119,7 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           prefixIcon: Icon(Icons.person_add),
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) => value == null || value.isEmpty
+                        validator: (value) => (value == null || value.isEmpty)
                             ? 'Isi username'
                             : null,
                       ),
@@ -132,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           prefixIcon: Icon(Icons.lock_outline),
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) => value == null || value.isEmpty
+                        validator: (value) => (value == null || value.isEmpty)
                             ? 'Isi password'
                             : null,
                       ),
@@ -166,6 +159,19 @@ class _RegisterScreenState extends State<RegisterScreen>
                             ),
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Sudah punya akun? '),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(context, '/login');
+                            },
+                            child: const Text('Login'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
