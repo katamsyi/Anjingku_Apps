@@ -8,11 +8,7 @@ class DogLocalService {
 
   static DogBreedLocal? getById(String id) {
     final box = getBox();
-    try {
-      return box.values.firstWhere((e) => e.id == id);
-    } catch (_) {
-      return null;
-    }
+    return box.get(id);
   }
 
   static List<DogBreedLocal> getFavorites() {
@@ -22,21 +18,11 @@ class DogLocalService {
 
   static Future<void> save(DogBreedLocal data) async {
     final box = getBox();
-    final existing = getById(data.id);
-    if (existing != null) {
-      existing.userNote = data.userNote;
-      existing.isFavorite = data.isFavorite;
-      await existing.save();
-    } else {
-      await box.add(data);
-    }
+    await box.put(data.id, data); // simpan/update berdasarkan id sebagai key
   }
 
   static Future<void> delete(String id) async {
     final box = getBox();
-    final existing = getById(id);
-    if (existing != null) {
-      await existing.delete();
-    }
+    await box.delete(id);
   }
 }

@@ -94,6 +94,16 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
     _searchController.clear();
   }
 
+  void _showSnackBar(String message, bool isSuccess) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -147,11 +157,9 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                           fav.localData.isFavorite = false;
                           await DogLocalService.save(fav.localData);
                           _reloadFavorites();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    '${fav.apiBreed.name} dihapus dari favorit')),
-                          );
+                          _showSnackBar(
+                              '${fav.apiBreed.name} dihapus dari favorit',
+                              false);
                         },
                         background: Container(
                           color: Colors.red,
@@ -209,13 +217,30 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.favorite,
-                                      color: Colors.red),
-                                  tooltip: 'Hapus Favorit',
+                                  icon: Icon(
+                                    Icons.favorite,
+                                    color: fav.localData.isFavorite
+                                        ? Colors.red
+                                        : Colors.grey,
+                                  ),
+                                  tooltip: fav.localData.isFavorite
+                                      ? 'Hapus Favorit'
+                                      : 'Tambah Favorit',
                                   onPressed: () async {
-                                    fav.localData.isFavorite = false;
+                                    fav.localData.isFavorite =
+                                        !fav.localData.isFavorite;
                                     await DogLocalService.save(fav.localData);
                                     _reloadFavorites();
+
+                                    if (fav.localData.isFavorite) {
+                                      _showSnackBar(
+                                          '${fav.apiBreed.name} ditambahkan ke favorit',
+                                          true);
+                                    } else {
+                                      _showSnackBar(
+                                          '${fav.apiBreed.name} dihapus dari favorit',
+                                          false);
+                                    }
                                   },
                                 ),
                               ],

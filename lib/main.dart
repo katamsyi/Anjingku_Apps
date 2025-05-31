@@ -8,6 +8,7 @@ import 'models/dog_breed_local.dart';
 import 'models/user_model.dart';
 import 'screens/login_screen.dart';
 import 'package:device_preview/device_preview.dart';
+import 'widgets/nav_bar.dart'; // import NavBar
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
+        '/navbar': (context) => const NavBar(),
         '/favorites': (context) => const FavoriteScreen(),
         '/notes_list': (context) => const NotesListScreen(),
         '/note_edit': (context) {

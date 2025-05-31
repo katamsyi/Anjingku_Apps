@@ -1,5 +1,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+<!-- Contoh izin akses lokasi -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+<!-- Contoh izin akses penyimpanan -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+<!-- Contoh izin kamera -->
+<uses-permission android:name="android.permission.CAMERA"/>
+
+
     <application
+    android:enableOnBackInvokedCallback="true"
         android:label="cobaprojek"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

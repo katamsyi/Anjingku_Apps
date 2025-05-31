@@ -61,10 +61,7 @@ class _LoginScreenState extends State<LoginScreen>
         logger.i('Login status saved for user: $username');
 
         if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        Navigator.pushReplacementNamed(context, '/navbar'); // pindah ke NavBar
       } else {
         setState(() {
           _errorMessage = 'Username atau password salah';

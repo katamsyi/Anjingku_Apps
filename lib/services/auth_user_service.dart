@@ -20,6 +20,20 @@ class AuthService {
     await box.add(newUser);
   }
 
+   // Ambil User lengkap dari username yang login (SharedPreferences)
+  static Future<User?> getCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString(_keyUsername);
+    if (username == null) return null;
+
+    final box = getUserBox();
+    try {
+      return box.values.firstWhere((u) => u.username == username);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // Validasi login dari Hive
   static bool validateUser(String username, String password) {
     final box = getUserBox();
