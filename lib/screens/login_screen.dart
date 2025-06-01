@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/auth_user_service.dart';
-import 'home_screen.dart';
 import 'package:logger/logger.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -10,8 +9,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
-    with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -20,21 +18,6 @@ class _LoginScreenState extends State<LoginScreen>
 
   bool _isLoading = false;
   String? _errorMessage;
-
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation =
-        CurvedAnimation(parent: _animationController, curve: Curves.easeIn);
-    _animationController.forward();
-  }
 
   void _login() async {
     if (_formKey.currentState!.validate()) {
@@ -58,15 +41,13 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (isValid) {
         await AuthService.saveLoginStatus(username);
-        logger.i('Login status saved for user: $username');
 
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/navbar'); // pindah ke NavBar
+        Navigator.pushReplacementNamed(context, '/navbar');
       } else {
         setState(() {
           _errorMessage = 'Username atau password salah';
         });
-        logger.w('Login failed for username: $username');
       }
     }
   }
@@ -75,100 +56,155 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final Color darkBrown = const Color(0xFF4E342E);
+    final Color lightBrown = const Color(0xFFEFEBE9);
+    final Color accentBrown = const Color(0xFF6D4C41);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFE9F0F5),
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [lightBrown, darkBrown.withOpacity(0.8)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
             child: Card(
-              elevation: 10,
+              elevation: 15,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              color: lightBrown,
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Icon(
+                        Icons.pets,
+                        size: 80,
+                        color: darkBrown,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
                         'Welcome Back!',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blueGrey,
+                          color: darkBrown,
+                          letterSpacing: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 30),
                       TextFormField(
                         controller: _usernameController,
-                        decoration: const InputDecoration(
+                        cursorColor: darkBrown,
+                        style: TextStyle(color: darkBrown),
+                        decoration: InputDecoration(
                           labelText: 'Username',
-                          prefixIcon: Icon(Icons.person),
-                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.pets, color: darkBrown),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: accentBrown, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: darkBrown, width: 1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          labelStyle: TextStyle(color: darkBrown.withOpacity(0.7)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 18, horizontal: 16),
                         ),
-                        validator: (value) => (value == null || value.isEmpty)
-                            ? 'Isi username'
-                            : null,
+                        validator: (value) =>
+                            (value == null || value.isEmpty) ? 'Isi username' : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 22),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
-                        decoration: const InputDecoration(
+                        cursorColor: darkBrown,
+                        style: TextStyle(color: darkBrown),
+                        decoration: InputDecoration(
                           labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock),
-                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.lock, color: darkBrown),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: accentBrown, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: darkBrown, width: 1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          labelStyle: TextStyle(color: darkBrown.withOpacity(0.7)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 18, horizontal: 16),
                         ),
-                        validator: (value) => (value == null || value.isEmpty)
-                            ? 'Isi password'
-                            : null,
+                        validator: (value) =>
+                            (value == null || value.isEmpty) ? 'Isi password' : null,
                       ),
                       const SizedBox(height: 20),
                       if (_errorMessage != null)
                         Text(
                           _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+                          style: const TextStyle(
+                              color: Colors.redAccent, fontWeight: FontWeight.bold),
                         ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: _isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.login),
-                          label: Text(_isLoading ? 'Logging in...' : 'Login'),
+                        height: 52,
+                        child: ElevatedButton(
                           onPressed: _isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: darkBrown,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(24),
                             ),
+                            elevation: 8,
+                            shadowColor: accentBrown.withOpacity(0.5),
                           ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text(
+                                  'Login',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
                       TextButton(
                         onPressed: () {
                           Navigator.pushNamed(context, '/register');
                         },
-                        child: const Text('Belum punya akun? Daftar sekarang'),
+                        child: Text(
+                          'Belum punya akun? Daftar sekarang',
+                          style: TextStyle(
+                            color: accentBrown,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                       ),
                     ],
                   ),

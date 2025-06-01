@@ -9,8 +9,7 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen>
-    with SingleTickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -19,21 +18,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   bool _isLoading = false;
   String? _errorMessage;
-
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation =
-        CurvedAnimation(parent: _animationController, curve: Curves.easeIn);
-    _animationController.forward();
-  }
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
@@ -68,62 +52,108 @@ class _RegisterScreenState extends State<RegisterScreen>
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final Color darkBrown = const Color(0xFF4E342E);
+    final Color lightBrown = const Color(0xFFEFEBE9);
+    final Color accentBrown = const Color(0xFF6D4C41);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFEAF0F6),
-      appBar: AppBar(
-        title: const Text('Register'),
-      ),
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [lightBrown, darkBrown.withOpacity(0.8)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
             child: Card(
+              elevation: 15,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              elevation: 10,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              color: lightBrown,
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
+                      Icon(
+                        Icons.pets,
+                        size: 80,
+                        color: darkBrown,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
                         'Buat Akun Baru',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 26,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blueGrey,
+                          color: darkBrown,
+                          letterSpacing: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 30),
                       TextFormField(
                         controller: _usernameController,
-                        decoration: const InputDecoration(
+                        cursorColor: darkBrown,
+                        style: TextStyle(color: darkBrown),
+                        decoration: InputDecoration(
                           labelText: 'Username',
-                          prefixIcon: Icon(Icons.person_add),
-                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.pets, color: darkBrown),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: accentBrown, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: darkBrown, width: 1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          labelStyle:
+                              TextStyle(color: darkBrown.withOpacity(0.7)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 18, horizontal: 16),
                         ),
                         validator: (value) => (value == null || value.isEmpty)
                             ? 'Isi username'
                             : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 22),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
-                        decoration: const InputDecoration(
+                        cursorColor: darkBrown,
+                        style: TextStyle(color: darkBrown),
+                        decoration: InputDecoration(
                           labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock_outline),
-                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.lock, color: darkBrown),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: accentBrown, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: darkBrown, width: 1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          labelStyle:
+                              TextStyle(color: darkBrown.withOpacity(0.7)),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              vertical: 18, horizontal: 16),
                         ),
                         validator: (value) => (value == null || value.isEmpty)
                             ? 'Isi password'
@@ -133,43 +163,61 @@ class _RegisterScreenState extends State<RegisterScreen>
                       if (_errorMessage != null)
                         Text(
                           _errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+                          style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.bold),
                         ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: _isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.app_registration),
-                          label:
-                              Text(_isLoading ? 'Registering...' : 'Register'),
+                        height: 52,
+                        child: ElevatedButton(
                           onPressed: _isLoading ? null : _register,
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: darkBrown,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(24),
                             ),
+                            elevation: 8,
+                            shadowColor: accentBrown.withOpacity(0.5),
                           ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text(
+                                  'Register',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('Sudah punya akun? '),
+                          Text(
+                            'Sudah punya akun? ',
+                            style: TextStyle(
+                              color: accentBrown,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           TextButton(
                             onPressed: () {
                               Navigator.pushReplacementNamed(context, '/login');
                             },
-                            child: const Text('Login'),
+                            child: Text(
+                              'Login',
+                              style: TextStyle(
+                                color: accentBrown,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
                           ),
                         ],
                       ),
