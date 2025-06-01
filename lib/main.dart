@@ -8,7 +8,7 @@ import 'models/dog_breed_local.dart';
 import 'models/user_model.dart';
 import 'screens/login_screen.dart';
 import 'package:device_preview/device_preview.dart';
-import 'widgets/nav_bar.dart'; // import NavBar
+import 'widgets/nav_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
