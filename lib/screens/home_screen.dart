@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart'; 
 import 'package:cached_network_image/cached_network_image.dart';
-import '../services/dog_api_service.dart'; // sesuaikan path sesuai struktur proyekmu
+import '../services/dog_api_service.dart';
 import '../models/dog_breed_model.dart';
-import 'dog_breed_detail_screen.dart'; // halaman detail dog breed
+import 'dog_detail_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -13,6 +13,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+//state class untuk timer selalu nyala
 class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
   String search = "";
@@ -21,12 +22,12 @@ class _HomePageState extends State<HomePage>
   late String timeString;
   late Timer timer;
 
-  // ✅ PERBAIKAN 1: Buat Future sekali saja, tidak di build()
+  //objek future untuk load data
   late Future<List<DogBreed>> _breedsFuture;
   String _lastSearch = "";
 
   @override
-  bool get wantKeepAlive => true; // ✅ PERBAIKAN 2: Jaga state tetap hidup
+  bool get wantKeepAlive => true; 
 
   @override
   void initState() {
@@ -34,7 +35,6 @@ class _HomePageState extends State<HomePage>
     timeString = _formatDateTime(DateTime.now());
     timer = Timer.periodic(const Duration(seconds: 1), (Timer t) => _getTime());
 
-    // ✅ PERBAIKAN 3: Inisialisasi Future di initState
     _breedsFuture = DogApiService.fetchAllBreeds();
   }
 
@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage>
     timer.cancel();
     super.dispose();
   }
-
+  //Fungsi Update waktu berdasarkan zona yang dpilih
   void _getTime() {
     DateTime waktu;
     if (waktuBagian == 'WITA') {
@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage>
       waktu = DateTime.now();
     }
 
-    // ✅ PERBAIKAN 4: Hanya update waktu, tidak rebuild seluruh widget
+    // Hanya update waktu, tidak rebuild seluruh widget
     if (mounted) {
       setState(() {
         timeString = _formatDateTime(waktu);
@@ -65,21 +65,21 @@ class _HomePageState extends State<HomePage>
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return DateFormat('kk:mm:ss').format(dateTime);
+    return DateFormat('kk:mm:ss').format(dateTime);//format waktu 
   }
 
+  //Fungsi untuk form pencarian
   Widget searchField() {
     return Container(
       width: double.infinity,
       height: 50,
-      child: TextFormField(
+      child: TextFormField( 
         onFieldSubmitted: (value) {
           final trimmedValue = value.trim();
           if (trimmedValue != _lastSearch) {
             setState(() {
               search = trimmedValue;
               _lastSearch = trimmedValue;
-              // ✅ PERBAIKAN 5: Update Future hanya saat search berubah
               _breedsFuture = search.isEmpty
                   ? DogApiService.fetchAllBreeds()
                   : DogApiService.searchBreeds(search);
@@ -101,7 +101,7 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // ✅ Wajib untuk AutomaticKeepAliveClientMixin
+    super.build(context); 
 
     return Scaffold(
       appBar: AppBar(
@@ -113,7 +113,6 @@ class _HomePageState extends State<HomePage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Waktu dan Dropdown zona waktu
             Container(
               width: MediaQuery.of(context).size.width / 1.6,
               decoration: BoxDecoration(
@@ -174,7 +173,6 @@ class _HomePageState extends State<HomePage>
 
             Expanded(
               child: FutureBuilder<List<DogBreed>>(
-                // ✅ PERBAIKAN 6: Gunakan Future yang sama, tidak dibuat ulang
                 future: _breedsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -208,18 +206,17 @@ class _HomePageState extends State<HomePage>
                             ),
                           );
                         },
+                        //card pada homePage
                         child: Card(
-                          // ✅ PERBAIKAN 7: Tambahkan key unik
                           key: ValueKey('${breed.name}_$index'),
                           child: Column(
                             children: [
                               Expanded(
-                                // ✅ PERBAIKAN 8: Gunakan RepaintBoundary untuk isolasi repaint
                                 child: RepaintBoundary(
                                   child: breed.imageUrl != null &&
                                           breed.imageUrl!.isNotEmpty
                                       ? CachedNetworkImage(
-                                          // ✅ PERBAIKAN 9: Gunakan CachedNetworkImage
+                                          // Load Image dari Api
                                           imageUrl: breed.imageUrl!,
                                           fit: BoxFit.cover,
                                           width: double.infinity,
@@ -249,12 +246,10 @@ class _HomePageState extends State<HomePage>
                                               ),
                                             ),
                                           ),
-                                          // ✅ PERBAIKAN 10: Smooth transition tanpa flicker
                                           fadeInDuration:
                                               Duration(milliseconds: 200),
                                           fadeOutDuration:
                                               Duration(milliseconds: 100),
-                                          // ✅ PERBAIKAN 11: Optimalkan memory cache
                                           memCacheWidth: 300,
                                           memCacheHeight: 300,
                                         )

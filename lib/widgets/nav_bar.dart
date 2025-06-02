@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/favorite_screen.dart';
-import '../screens/notes_list_screen.dart'; // ganti dog_breed_list_screen ke notes_list_screen
+import '../screens/notes_list_screen.dart'; 
 import '../screens/profile_screen.dart';
 
 class NavBar extends StatefulWidget {
@@ -17,7 +17,7 @@ class _NavBarState extends State<NavBar> {
   final List<Widget> pages = [
     const HomePage(),
     const FavoriteScreen(),
-    const NotesListScreen(), // diganti dari DogBreedListScreen
+    const NotesListScreen(), 
     const ProfilePage(),
   ];
 
@@ -42,7 +42,7 @@ class _NavBarState extends State<NavBar> {
           BottomNavigationBarItem(
               icon: Icon(Icons.favorite), label: 'Favorite'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.note), label: 'Notes'), // icon dan label diganti
+              icon: Icon(Icons.note), label: 'Notes'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: _onItemTapped,

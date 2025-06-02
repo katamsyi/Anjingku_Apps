@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/dog_breed_local.dart';
+import '../models/note_dog.dart';
 import '../models/dog_breed_model.dart';
 import '../services/dog_api_service.dart';
 import '../services/dog_local_service.dart';
@@ -47,7 +47,6 @@ class _NotesListScreenState extends State<NotesListScreen> {
       }
       return notesWithDetail;
     } catch (e) {
-      // Error fetch API, kembalikan list kosong
       return [];
     }
   }
@@ -62,15 +61,44 @@ class _NotesListScreenState extends State<NotesListScreen> {
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Hapus'),
-        content: Text('Yakin ingin menghapus catatan untuk $breedName?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text('Konfirmasi Hapus'),
+          ],
+        ),
+        content: RichText(
+          text: TextSpan(
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+            children: [
+              const TextSpan(text: 'Yakin ingin menghapus catatan untuk '),
+              TextSpan(
+                text: breedName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const TextSpan(text: '?'),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            child: Text(
+              'Batal',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Hapus'),
           ),
         ],
@@ -88,9 +116,28 @@ class _NotesListScreenState extends State<NotesListScreen> {
       _isDeleting = false;
     });
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Catatan untuk $breedName dihapus')),
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Catatan untuk $breedName berhasil dihapus'),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: const Duration(seconds: 3),
+      ),
     );
+  }
+
+  int _countNotes(String noteText) {
+    return noteText.split('\n').where((line) => line.trim().isNotEmpty).length;
   }
 
   @override
@@ -98,86 +145,305 @@ class _NotesListScreenState extends State<NotesListScreen> {
     return Stack(
       children: [
         Scaffold(
-          appBar: AppBar(title: const Text('Daftar Catatan')),
+          backgroundColor: Colors.grey.shade50,
+          appBar: AppBar(
+            title: const Text(
+              'Daftar Catatan',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: const Color.fromARGB(255, 212, 173, 115),
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
           body: FutureBuilder<List<_NoteBreed>>(
             future: _notesFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text(
+                        'Memuat catatan...',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                );
               }
+
               if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Terjadi kesalahan',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.red.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Error: ${snapshot.error}',
+                        style: TextStyle(color: Colors.grey.shade600),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
               }
+
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Center(child: Text('Belum ada catatan'));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.note_add_outlined,
+                        size: 80,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada catatan',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Mulai buat catatan untuk ras anjing favorit Anda!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
               }
 
               final notes = snapshot.data!;
 
-              return ListView.builder(
-                itemCount: notes.length,
-                itemBuilder: (context, index) {
-                  final note = notes[index];
+              return RefreshIndicator(
+                onRefresh: () async {
+                  _reloadNotes();
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: notes.length,
+                  itemBuilder: (context, index) {
+                    final note = notes[index];
+                    final noteCount =
+                        _countNotes(note.localData.userNote ?? '');
 
-                  return Dismissible(
-                    key: Key(note.localData.id),
-                    direction: DismissDirection.endToStart,
-                    confirmDismiss: (_) async {
-                      final confirm =
-                          await _showConfirmDialog(context, note.apiBreed.name);
-                      return confirm;
-                    },
-                    onDismissed: (_) async {
-                      await _deleteNote(note.localData.id, note.apiBreed.name);
-                    },
-                    background: Container(
-                      color: Colors.red,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: const Icon(Icons.delete, color: Colors.white),
-                    ),
-                    child: ListTile(
-                      leading: note.apiBreed.imageUrl.isNotEmpty
-                          ? Image.network(
-                              note.apiBreed.imageUrl,
-                              width: 60,
-                              height: 60,
-                              fit: BoxFit.cover,
-                            )
-                          : const SizedBox(width: 60, height: 60),
-                      title: Text(note.apiBreed.name),
-                      subtitle: Text(
-                        note.localData.userNote ?? '',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit),
-                        tooltip: 'Edit Catatan',
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => NoteEditScreen(
-                                breedId: note.localData.id,
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Dismissible(
+                        key: Key(note.localData.id),
+                        direction: DismissDirection.endToStart,
+                        confirmDismiss: (_) async {
+                          final confirm = await _showConfirmDialog(
+                              context, note.apiBreed.name);
+                          return confirm;
+                        },
+                        onDismissed: (_) async {
+                          await _deleteNote(
+                              note.localData.id, note.apiBreed.name);
+                        },
+                        background: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade600,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.delete_sweep,
+                                  color: Colors.white, size: 32),
+                              SizedBox(height: 4),
+                              Text(
+                                'Hapus',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(16),
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: note.apiBreed.imageUrl.isNotEmpty
+                                  ? Image.network(
+                                      note.apiBreed.imageUrl,
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          width: 60,
+                                          height: 60,
+                                          color: Colors.grey.shade300,
+                                          child: Icon(
+                                            Icons.pets,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade300,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        Icons.pets,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                            ),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    note.apiBreed.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '$noteCount catatan',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade700,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                note.localData.userNote
+                                        ?.replaceAll('\n', ' • ') ??
+                                    '',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
-                          );
-                          _reloadNotes();
-                        },
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Delete button
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline_rounded,
+                                    color: Colors.red.shade400,
+                                  ),
+                                  tooltip: 'Hapus Catatan',
+                                  onPressed: () async {
+                                    final confirm = await _showConfirmDialog(
+                                        context, note.apiBreed.name);
+                                    if (confirm == true) {
+                                      await _deleteNote(note.localData.id,
+                                          note.apiBreed.name);
+                                    }
+                                  },
+                                ),
+                                // Edit button
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.edit_outlined,
+                                    color: Colors.blue.shade600,
+                                  ),
+                                  tooltip: 'Edit Catatan',
+                                  onPressed: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => NoteEditScreen(
+                                          breedId: note.localData.id,
+                                        ),
+                                      ),
+                                    );
+                                    _reloadNotes();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               );
             },
           ),
         ),
         if (_isDeleting)
           Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.5),
             child: const Center(
-              child: CircularProgressIndicator(),
+              child: Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text(
+                        'Menghapus catatan...',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
       ],

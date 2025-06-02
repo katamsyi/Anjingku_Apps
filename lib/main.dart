@@ -4,7 +4,7 @@ import 'package:cobaprojek/screens/notes_list_screen.dart';
 import 'package:cobaprojek/screens/register_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'models/dog_breed_local.dart';
+import 'models/note_dog.dart';
 import 'models/user_model.dart';
 import 'screens/login_screen.dart';
 import 'package:device_preview/device_preview.dart';

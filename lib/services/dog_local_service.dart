@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import '../models/dog_breed_local.dart';
+import '../models/note_dog.dart';
 
 class DogLocalService {
   static const _boxName = 'dogBreedsLocal';
@@ -18,7 +18,7 @@ class DogLocalService {
 
   static Future<void> save(DogBreedLocal data) async {
     final box = getBox();
-    await box.put(data.id, data); // simpan/update berdasarkan id sebagai key
+    await box.put(data.id, data);
   }
 
   static Future<void> delete(String id) async {

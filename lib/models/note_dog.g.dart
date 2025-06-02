@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'dog_breed_local.dart';
+part of 'note_dog.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator

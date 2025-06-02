@@ -1,3 +1,5 @@
+//Hive untuk Profile user
+
 import 'package:hive/hive.dart';
 
 part 'user_model.g.dart'; // Untuk kode generate adapter

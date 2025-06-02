@@ -1,6 +1,8 @@
+//untuk menyimpan Catatan dan favorite ke local
+
 import 'package:hive/hive.dart';
 
-part 'dog_breed_local.g.dart';
+part 'note_dog.g.dart';
 
 @HiveType(typeId: 1)
 class DogBreedLocal extends HiveObject {
